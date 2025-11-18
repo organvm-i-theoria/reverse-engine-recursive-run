@@ -1,0 +1,139 @@
+# Similarity Scoring Weights for Repository Matching
+# Controls how similarity between org and discovered repos is calculated
+
+version: "1.0"
+last_updated: "2025-11-18"
+
+# Overall similarity formula:
+# similarity = (tech_stack × w_tech) + (domain × w_domain) + (scale × w_scale) +
+#              (activity × w_activity) + (maturity × w_maturity)
+
+# Primary weights (must sum to 1.0)
+weights:
+  tech_stack: 0.30      # Language, framework, tool overlap
+  problem_domain: 0.25  # Topic, keyword, purpose alignment
+  scale: 0.15           # Size, complexity, team size similarity
+  activity: 0.15        # Commit frequency, contributor patterns
+  maturity: 0.15        # Age, stars, maintenance status
+
+# Tech Stack Similarity
+tech_stack:
+  # Jaccard similarity on sets
+  language_weight: 0.40
+  framework_weight: 0.35
+  tool_weight: 0.25
+
+  # Bonus for exact version matches
+  version_match_bonus: 0.10
+
+  # Penalty for major version mismatches
+  version_mismatch_penalty: 0.05
+
+# Problem Domain Similarity
+problem_domain:
+  # Topic overlap (GitHub topics)
+  topic_weight: 0.50
+
+  # README keyword similarity (TF-IDF or word2vec)
+  readme_weight: 0.30
+
+  # Description similarity
+  description_weight: 0.20
+
+  # Minimum overlap threshold
+  min_topic_overlap: 0.1
+
+# Scale Similarity
+scale:
+  # Repository size (lines of code)
+  size_weight: 0.35
+  # Prefer repos within ±50% of our size
+  size_tolerance: 0.5
+
+  # Team size (contributor count)
+  team_size_weight: 0.35
+  # Prefer teams within ±50% of our size
+  team_tolerance: 0.5
+
+  # Complexity (cyclomatic, dependencies)
+  complexity_weight: 0.30
+
+# Activity Pattern Similarity
+activity:
+  # Commit frequency
+  commit_frequency_weight: 0.40
+
+  # Contributor diversity
+  contributor_pattern_weight: 0.30
+
+  # Issue/PR activity
+  engagement_weight: 0.30
+
+  # Time window for activity analysis (days)
+  analysis_window_days: 180
+
+# Maturity Alignment
+maturity:
+  # Repository age
+  age_weight: 0.25
+  # Prefer repos within ±2 years
+  age_tolerance_years: 2
+
+  # Star count (popularity indicator)
+  stars_weight: 0.25
+  # Use logarithmic scaling
+  stars_log_scale: true
+
+  # Maintenance status
+  maintenance_weight: 0.30
+  # Days since last commit
+  max_days_since_commit: 90
+
+  # Release cadence
+  release_weight: 0.20
+
+# Threshold for "similar enough"
+similarity_threshold: 0.60  # 0-1 scale
+
+# Boost factors
+boosts:
+  # Boost for repos from known high-quality orgs
+  quality_org_multiplier: 1.2
+  quality_orgs:
+    - "google"
+    - "microsoft"
+    - "facebook"
+    - "netflix"
+    - "uber"
+    - "airbnb"
+    - "stripe"
+
+  # Boost for repos with excellent documentation
+  docs_quality_multiplier: 1.1
+
+  # Boost for repos with comprehensive tests
+  test_coverage_multiplier: 1.15
+
+  # Boost for repos using CI/CD
+  ci_cd_multiplier: 1.1
+
+# Penalties
+penalties:
+  # Penalty for repos with security vulnerabilities
+  security_vuln_penalty: 0.8
+
+  # Penalty for repos with poor code quality
+  low_quality_penalty: 0.9
+
+  # Penalty for repos with no recent activity
+  stale_penalty: 0.7
+  stale_threshold_days: 180
+
+# Normalization
+normalization:
+  # Method: "minmax", "zscore", "robust"
+  method: "minmax"
+
+  # Clip outliers
+  clip_outliers: true
+  clip_percentile: 99
