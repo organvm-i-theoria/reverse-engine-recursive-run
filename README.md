@@ -1,208 +1,223 @@
-# Reverse Engineering & Architecture Governance Toolkit
+[![ORGAN-I: Theory](https://img.shields.io/badge/ORGAN--I-Theory-1a237e?style=flat-square)](https://github.com/organvm-i-theoria)
+[![Python](https://img.shields.io/badge/python-3.11+-3776ab?style=flat-square&logo=python&logoColor=white)]()
+[![Status: Active](https://img.shields.io/badge/status-active-brightgreen?style=flat-square)]()
 
-A comprehensive framework for reverse engineering closed-source codebases and implementing continuous architecture governance. This toolkit enables teams to:
+# reverse-engine-recursive-run
 
-- **Map architecture** (code + processes) for proprietary repositories
-- **Quantify risk** via churn, complexity, coverage gaps, criticality, and security analysis
-- **Detect architecture drift** through dependency graph analysis
-- **Identify knowledge concentration** risks across teams
-- **Generate SBOMs** and integrate security findings
-- **Produce consolidated risk registers** for governance
-- **Feed metrics to Backstage** and CI/CD governance loops
-- **Enable safe AI summarization** of codebases
-- **Provide remediation backlogs** with weighted risk formulas
-- **Support compliance & IP awareness**
+**Architecture governance toolkit — a 7-script Python pipeline for risk scoring, drift detection, ownership analysis, and SBOM generation across any codebase.**
+
+> Most codebases accumulate architectural debt invisibly. By the time a team notices, the drift between intended architecture and actual dependencies has calcified into technical risk that blocks every initiative. This toolkit makes that drift visible, quantifiable, and actionable — before it becomes an emergency.
+
+---
+
+## Table of Contents
+
+- [Problem Statement](#problem-statement)
+- [What This Toolkit Actually Does](#what-this-toolkit-actually-does)
+- [Core Pipeline](#core-pipeline)
+- [Risk Scoring Model](#risk-scoring-model)
+- [Architecture Drift Detection](#architecture-drift-detection)
+- [Quick Start](#quick-start)
+- [Configuration](#configuration)
+- [Templates and Outputs](#templates-and-outputs)
+- [Repository Contents](#repository-contents)
+- [Containerized Analysis](#containerized-analysis)
+- [ADR Scaffolding](#adr-scaffolding)
+- [Roadmap](#roadmap)
+- [Cross-References](#cross-references)
+- [Author](#author)
+
+---
+
+## Problem Statement
+
+Software architecture degrades through three invisible mechanisms:
+
+1. **Knowledge concentration** — critical subsystems understood by one person, creating single points of failure that only surface during attrition or incident response.
+2. **Dependency drift** — the actual import graph and service boundaries diverge from the documented or intended architecture, introducing coupling that contradicts design decisions.
+3. **Security surface expansion** — vulnerability density in specific modules grows unchecked because scanning tools produce raw findings without contextual prioritization.
+
+Traditional approaches treat these as separate concerns: bus-factor analysis in one tool, dependency graphing in another, vulnerability scanning in a third. This toolkit unifies all three into a single pipeline that produces a weighted, composite risk score per service or module — so you can see which parts of your codebase are simultaneously poorly understood, architecturally drifting, and accumulating vulnerabilities.
+
+The output is a prioritized remediation backlog, not a dashboard. It is designed to feed into sprint planning, not sit in a monitoring tab.
+
+## What This Toolkit Actually Does
+
+This is a **working set of 7 Python scripts and 1 shell script**, orchestrated by a Makefile, that analyze a codebase and produce structured risk assessments. The pipeline is functional and has been used for real analysis. It is not a SaaS product, a web application, or a platform — it is a command-line toolkit that runs locally or in a container.
+
+**What exists today:**
+- 7 analysis scripts covering risk scoring, drift detection, ownership analysis, and security normalization
+- A Makefile that orchestrates the full pipeline with `make full-analysis`
+- A Docker image for reproducible analysis environments
+- YAML-driven configuration for risk weights and service boundaries
+- Markdown and YAML output templates for executive summaries and remediation backlogs
+- ADR (Architecture Decision Record) scaffolding for documenting governance decisions
+
+**What does not exist yet** (see [Roadmap](#roadmap)):
+- A Backstage plugin or web UI
+- A backend server or API
+- CI/CD workflow integration
+- Automated scheduling or continuous monitoring
+- Test suite or formal packaging (no `pyproject.toml`)
+
+## Core Pipeline
+
+The pipeline consists of 7 scripts that run sequentially. Each script reads from upstream outputs or external tool results and writes structured data for the next stage.
+
+| # | Script | Purpose | Input | Output |
+|---|--------|---------|-------|--------|
+| 1 | `parse_trivy.py` | Normalize Trivy vulnerability scan results into a standard schema | Trivy JSON output | Normalized vulnerability records |
+| 2 | `parse_semgrep.py` | Normalize Semgrep static analysis results into the same schema | Semgrep JSON output | Normalized finding records |
+| 3 | `gen_sbom.sh` | Generate Software Bill of Materials using Syft | Target codebase | SBOM in CycloneDX format |
+| 4 | `scan_drift.py` | Detect architecture drift by comparing actual imports/dependencies against declared service boundaries | Codebase + `service_paths.yaml` | Drift report with boundary violations |
+| 5 | `ownership_diff.py` | Analyze git blame and commit history to identify knowledge concentration (bus factor) | Git repository | Ownership concentration scores per module |
+| 6 | `hotspot_merge.py` | Merge vulnerability, drift, and ownership signals into composite risk scores using configurable weights | Outputs from steps 1–5 + `risk_weights.yaml` | Weighted risk scores per service/module |
+| 7 | `risk_update.py` | Aggregate risk scores into a final prioritized report and populate output templates | Merged risk data | Executive summary + remediation backlog |
+
+The canonical invocation is:
+
+```bash
+make full-analysis
+```
+
+This runs all 7 stages in order. Individual stages can also be run independently if you only need a subset of the analysis (e.g., `python hotspot_merge.py` for risk scoring alone, given pre-existing inputs).
+
+## Risk Scoring Model
+
+The composite risk score for each service or module is computed by `hotspot_merge.py` using a weighted formula. The weights are defined in `risk_weights.yaml` and can be tuned per-project.
+
+The three input signals are:
+
+- **Vulnerability density** — normalized count of security findings (from Trivy + Semgrep) per module, weighted by severity (critical > high > medium > low).
+- **Drift score** — number and severity of boundary violations detected by `scan_drift.py`. A module that imports from a service it should not depend on receives a higher drift score.
+- **Ownership concentration** — inverse of bus factor. A module where 90% of commits come from one author scores higher than a module with distributed authorship.
+
+These three signals are multiplied by their respective weights and summed to produce a final risk score. The output is sorted descending — the highest-risk modules appear first, making it immediately clear where to focus remediation effort.
+
+The default weights in `risk_weights.yaml` emphasize ownership concentration slightly more than vulnerability density, on the theory that a well-understood module with known vulnerabilities is less risky than a poorly understood module with fewer vulnerabilities — because the former can be fixed by anyone, while the latter requires a specific person who may not be available.
+
+## Architecture Drift Detection
+
+`scan_drift.py` is the most theoretically interesting script in the pipeline. It operates on a simple but powerful premise: if you can declare what your service boundaries *should* be, the tool can tell you where reality has diverged.
+
+The intended architecture is declared in `service_paths.yaml`, which maps service names to directory paths and lists their permitted dependencies. The script then walks the actual import graph (via AST parsing for Python, `require`/`import` analysis for JavaScript/TypeScript) and flags any import that crosses a boundary not listed in the permitted dependencies.
+
+This is not a full architectural fitness function — it does not enforce layering rules or detect temporal coupling. But it catches the most common form of architectural decay: the unauthorized cross-service import that gets added during a deadline sprint and never removed.
 
 ## Quick Start
 
-### Prerequisites
-
 ```bash
-# Install required tools
-pip install radon pipdeptree cyclonedx-bom pyyaml
-npm install -g @cyclonedx/cyclonedx-npm
+# Clone the repository
+git clone https://github.com/organvm-i-theoria/reverse-engine-recursive-run.git
+cd reverse-engine-recursive-run
+
+# Option 1: Run directly (requires Python 3.11+)
+# Point the scripts at your target codebase by editing service_paths.yaml
+# Then run the full pipeline:
+make full-analysis
+
+# Option 2: Run in Docker (recommended for reproducibility)
+docker build -f Dockerfile.analysis -t reverse-engine .
+docker run -v /path/to/your/codebase:/workspace reverse-engine make full-analysis
 ```
 
-### Basic Usage
-
-```bash
-# 1. Generate SBOM
-./scripts/gen_sbom.sh --out artifacts/sbom --ref "$(git rev-parse HEAD)"
-
-# 2. Analyze code complexity and churn
-radon cc -j -s src/ > artifacts/complexity.json
-git log --since=90.days --name-only --pretty=format: | sort | grep -v '^$' | uniq -c > artifacts/churn.txt
-
-# 3. Merge into hotspot analysis
-python scripts/hotspot_merge.py \
-  --churn artifacts/churn.txt \
-  --complexity artifacts/complexity.json \
-  --out artifacts/hotspots.json
-```
-
-## Core Components
-
-### Scripts (`scripts/`)
-
-| Script | Purpose |
-|--------|---------|
-| `gen_sbom.sh` | Generate CycloneDX/SPDX SBOMs across ecosystems |
-| `scan_drift.py` | Compare dependency graphs to detect architecture drift |
-| `hotspot_merge.py` | Merge churn + complexity + coverage into risk scores |
-| `ownership_diff.py` | Detect knowledge concentration per directory |
-| `risk_update.py` | Aggregate analyses into consolidated risk register |
-| `parse_trivy.py` | Normalize Trivy security findings |
-| `parse_semgrep.py` | Normalize Semgrep security findings |
-
-### Templates (`templates/`)
-
-- Executive summary template
-- Remediation backlog scaffold (YAML)
-- AI-safe summarization prompt templates
-
-### Backstage Plugin (`backstage/plugins/architecture-risk/`)
-
-React components for visualizing:
-- Risk overview widgets
-- Hotspot tables
-- Knowledge concentration gauges
-- Dependency graph visualization
-
-### Backend Service (`server/`)
-
-Node/Express API serving:
-- Service metrics
-- Hotspot data
-- Dependency graphs
-- Cycle detection
-- Time-series data
-
-## Architecture
-
-### Risk Scoring Model
-
-Risk is calculated using multiple dimensions:
-
-- **Churn** (40%): Code volatility over 90 days
-- **Complexity** (40%): Cyclomatic complexity metrics  
-- **Coverage Gap** (10%): Missing test coverage
-- **Criticality** (10%): Business impact weighting
-
-Formula:
-```
-risk = (normalized_churn * 0.4) + (normalized_complexity * 0.4) + 
-       (coverage_penalty * 0.1) + (criticality_factor * 0.1)
-```
-
-### Drift Detection
-
-Tracks changes in dependency graphs:
-- Added/removed nodes (modules, services)
-- Added/removed edges (dependencies)
-- Edge churn ratio
-- Core boundary violations
-
-### Knowledge Concentration
-
-Identifies single points of failure:
-- Top contributor percentage per module
-- Single contributor warnings
-- Criticality-weighted risk
-
-## Advanced Features
-
-### Diff-Aware Risk
-
-Focus on changed files in PRs:
-```bash
-scripts/diff_changed_files.sh origin/main HEAD > artifacts/changed_files.txt
-python scripts/diff_risk.py --hotspots artifacts/hotspots.json \
-  --changed artifacts/changed_files.txt --out artifacts/diff_hotspots.json
-```
-
-### Time-Series Persistence
-
-Track metrics over time:
-```bash
-python scripts/record_timeseries.py \
-  --services config/service_paths.yaml \
-  --out-dir artifacts/timeseries
-```
-
-### ADR Enforcement
-
-Ensure architectural decisions are documented:
-```bash
-python scripts/adr_enforce_boundary.py \
-  --drift artifacts/drift_report.json \
-  --adr-index docs/adr/0000-record-architecture-decisions.md \
-  --config config/adr_enforcement.yaml
-```
-
-### Cycle Detection
-
-Find circular dependencies:
-```bash
-curl http://localhost:8085/api/graph-cycles | jq '.'
-```
-
-## CI/CD Integration
-
-See `.github/workflows/arch-governance.yml` for complete pipeline example.
-
-Key steps:
-1. Build & test (generate coverage)
-2. Static analysis (complexity, churn)
-3. SBOM generation
-4. Security scanning
-5. Hotspot analysis
-6. Drift detection
-7. Risk aggregation
-8. Artifact publishing
-
-## Documentation
-
-- `docs/summary_compiled.md` - Complete system overview
-- `docs/diff-aware-risk.md` - Focusing on PR changes
-- `docs/time-series-metrics.md` - Historical tracking
-- `docs/adr-enforcement.md` - Decision record enforcement
-- `docs/graph-cycles.md` - Circular dependency detection
-- `docs/security-ingestion.md` - Security tool integration
+See `QUICKSTART.md` for detailed setup instructions and `scripts/README.md` for per-script documentation.
 
 ## Configuration
 
-### Service Path Mapping (`config/service_paths.yaml`)
+| File | Purpose |
+|------|---------|
+| `risk_weights.yaml` | Tunable weights for the three risk signals (vulnerability, drift, ownership). Adjust these to reflect your organization's priorities. |
+| `service_paths.yaml` | Declares service boundaries — maps service names to directory paths and lists permitted inter-service dependencies. This is the "intended architecture" that drift detection compares against. |
 
-```yaml
-services:
-  payments-service:
-    paths:
-      - "src/payments/"
-      - "src/core/payment"
+Both files are YAML and designed to be human-editable. There are no environment variables or CLI flags to set — all configuration is file-based.
+
+## Templates and Outputs
+
+| File | Purpose |
+|------|---------|
+| `templates/executive_summary_template.md` | Markdown template populated by `risk_update.py` — produces a narrative summary suitable for sharing with leadership or architecture review boards. |
+| `templates/remediation_backlog.yaml` | YAML template populated by `risk_update.py` — produces a structured backlog of prioritized remediation items, ready to import into a project tracker. |
+
+The compiled reference document at `docs/summary_compiled.md` (3,000+ words) provides a detailed walkthrough of the methodology, scoring model, and interpretation guidelines.
+
+## Repository Contents
+
+```
+reverse-engine-recursive-run/
+├── Makefile                          # Pipeline orchestration (make full-analysis)
+├── Dockerfile.analysis               # Ubuntu 22.04, Python 3, Node 20, Go 1.22
+├── README.md                         # This file
+├── QUICKSTART.md                     # Setup and first-run guide
+├── risk_weights.yaml                 # Configurable risk signal weights
+├── service_paths.yaml                # Declared service boundaries
+├── hotspot_merge.py                  # Risk scoring — merges 3 signals into composite score
+├── scan_drift.py                     # Architecture drift detection
+├── ownership_diff.py                 # Knowledge concentration / bus factor analysis
+├── risk_update.py                    # Aggregation and report generation
+├── parse_trivy.py                    # Trivy vulnerability normalization
+├── parse_semgrep.py                  # Semgrep finding normalization
+├── scripts/
+│   ├── gen_sbom.sh                   # SBOM generation via Syft
+│   ├── adr_new.sh                    # ADR scaffolding script
+│   └── README.md                     # Per-script documentation
+├── templates/
+│   ├── executive_summary_template.md # Report output template
+│   ├── remediation_backlog.yaml      # Backlog output template
+│   └── adr_template.md              # ADR template
+└── docs/
+    └── summary_compiled.md           # 3,000+ word methodology reference
 ```
 
-### Risk Weights (`config/risk_weights.yaml`)
+**22 files, ~151KB total. Pure Python + shell. No external Python dependencies beyond the standard library.**
 
-```yaml
-weights:
-  churn: 0.30
-  complexity: 0.35
-  coverage_gap: 0.15
-  criticality: 0.10
-  security_hotspot: 0.10
-```
+## Containerized Analysis
 
-## Security & Privacy
+The `Dockerfile.analysis` provides a reproducible analysis environment based on Ubuntu 22.04 with:
 
-- No raw source code in SBOM outputs
-- Classify artifacts as Internal/Confidential
-- Sanitize AI prompts (no secrets, structural metadata only)
-- Redact sensitive data before distribution
+- Python 3 (for the analysis scripts)
+- Node.js 20 (for JavaScript/TypeScript import analysis in `scan_drift.py`)
+- Go 1.22 (for Go dependency analysis)
+- Trivy, Semgrep, and Syft (for security scanning and SBOM generation)
 
-## License
+This ensures that the full pipeline — including the external security tools — runs identically regardless of the host environment. The image is designed for ephemeral analysis runs, not as a long-running service.
 
-Internal use - see organization policies.
+## ADR Scaffolding
 
-## Contributing
+The repository includes lightweight Architecture Decision Record tooling:
 
-This toolkit was created through an AI-assisted design process to provide comprehensive architecture governance capabilities. Contributions should follow established patterns and maintain security/privacy standards.
+- `scripts/adr_new.sh` — creates a new ADR from the template with auto-incrementing numbering
+- `templates/adr_template.md` — standard ADR format (context, decision, consequences)
+
+This is included because governance decisions about the codebase under analysis should be recorded alongside the analysis itself. When the risk pipeline identifies a structural problem, the ADR scaffolding provides a place to document the decision about how to address it.
+
+## Roadmap
+
+The following capabilities are planned but **do not exist in the current codebase**:
+
+- **Test suite** — unit tests for each script, integration tests for the full pipeline, and property-based tests for the risk scoring model.
+- **Formal packaging** — `pyproject.toml` with proper dependency declaration, versioned releases, and `pip install` support.
+- **CI/CD integration** — GitHub Actions workflow that runs the pipeline on pull requests and comments with risk score changes.
+- **Backstage plugin** — a read-only Backstage catalog integration that surfaces risk scores alongside service metadata.
+- **Scheduling and continuous monitoring** — cron-driven or event-driven pipeline execution with historical trend tracking.
+- **Additional language support** — expand `scan_drift.py` import analysis beyond Python and JavaScript to cover Rust, Go, and Java.
+- **Visualization** — dependency graph rendering with drift violations highlighted, exportable as SVG or embedded in the executive summary.
+
+Contributions toward any of these are welcome. The current scripts are deliberately simple (single-file, standard library only) to make extension straightforward.
+
+## Cross-References
+
+| Resource | Description |
+|----------|-------------|
+| [recursive-engine](https://github.com/organvm-i-theoria/recursive-engine) | Flagship ORGAN-I repository — recursive system theory and self-referential computation |
+| [ORGAN-I: Theoria](https://github.com/organvm-i-theoria) | Parent organization — theory, epistemology, recursion, ontology |
+| [meta-organvm](https://github.com/meta-organvm) | Meta-organization — umbrella governance across all 8 organs |
+| [ORGAN-IV: Taxis](https://github.com/organvm-iv-taxis) | Orchestration organ — governance routing and system coordination |
+
+This repository belongs to ORGAN-I because architecture governance is fundamentally a theoretical concern: it asks "what *should* the system look like?" and measures deviation from that ideal. The toolkit operationalizes architectural intent — making it a bridge between theory (ORGAN-I) and orchestration (ORGAN-IV).
+
+---
+
+**Author:** **[@4444J99](https://github.com/4444J99)** / Part of [ORGAN-I: Theoria](https://github.com/organvm-i-theoria)
+
+**License:** Not yet specified. See [Roadmap](#roadmap).
