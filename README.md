@@ -5,6 +5,14 @@
 
 # reverse-engine-recursive-run
 
+[![CI](https://github.com/organvm-i-theoria/reverse-engine-recursive-run/actions/workflows/ci.yml/badge.svg)](https://github.com/organvm-i-theoria/reverse-engine-recursive-run/actions/workflows/ci.yml)
+[![Coverage](https://img.shields.io/badge/coverage-pending-lightgrey)](https://github.com/organvm-i-theoria/reverse-engine-recursive-run)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/organvm-i-theoria/reverse-engine-recursive-run/blob/main/LICENSE)
+[![Organ I](https://img.shields.io/badge/Organ-I%20Theoria-8B5CF6)](https://github.com/organvm-i-theoria)
+[![Status](https://img.shields.io/badge/status-active-brightgreen)](https://github.com/organvm-i-theoria/reverse-engine-recursive-run)
+[![Python](https://img.shields.io/badge/lang-Python-informational)](https://github.com/organvm-i-theoria/reverse-engine-recursive-run)
+
+
 **Architecture governance toolkit — a 7-script Python pipeline for risk scoring, drift detection, ownership analysis, and SBOM generation across any codebase.**
 
 > Most codebases accumulate architectural debt invisibly. By the time a team notices, the drift between intended architecture and actual dependencies has calcified into technical risk that blocks every initiative. This toolkit makes that drift visible, quantifiable, and actionable — before it becomes an emergency.
