@@ -1,4 +1,4 @@
-name: Minimal CI
+name: Python CI
 
 on:
   push:
@@ -8,34 +8,25 @@ on:
   workflow_dispatch:
 
 jobs:
-  validate:
-    name: Repository Health Check
+  test:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        uses: actions/checkout@v4
 
-      - name: Verify README exists
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
         run: |
-          if [ -f "README.md" ]; then
-            echo "README.md found"
-          else
-            echo "::warning::No README.md found"
-          fi
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
 
-      - name: Verify LICENSE exists
-        run: |
-          if [ -f "LICENSE" ]; then
-            echo "LICENSE found"
-          else
-            echo "::warning::No LICENSE found"
-          fi
+      - name: Lint with ruff
+        continue-on-error: true
+        run: ruff check --output-format=github scripts/
 
-      - name: Repository structure
-        run: |
-          echo "## Repository Contents"
-          ls -la
-          echo ""
-          echo "## Directory Tree (depth 2)"
-          find . -maxdepth 2 -not -path "./.git/*" -not -path "./.git" | sort
-
+      - name: Test with pytest
+        run: pytest tests/ -v
