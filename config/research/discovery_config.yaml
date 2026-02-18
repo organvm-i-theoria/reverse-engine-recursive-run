@@ -1,0 +1,130 @@
+# Discovery Configuration for Recursive Research System
+# Controls how repositories are discovered and filtered
+
+version: "1.0"
+last_updated: "2025-11-18"
+
+# GitHub API Configuration
+github:
+  # Rate limiting
+  max_requests_per_hour: 5000
+  requests_per_minute: 30
+
+  # Search parameters
+  min_stars: 10
+  min_updated_days_ago: 365  # Only repos updated in last year
+  max_age_years: 10  # Ignore repos older than 10 years
+
+  # Result limits
+  max_results_per_query: 100
+  max_total_results: 500
+
+  # Pagination
+  per_page: 30
+
+# Search query construction
+search_queries:
+  # Automatically generated from org profile
+  auto_generate: true
+
+  # Manual queries (always included)
+  manual:
+    - "topic:architecture topic:governance"
+    - "topic:code-quality topic:static-analysis"
+    - "topic:devops topic:automation"
+    - "topic:security topic:sast"
+    - "topic:documentation topic:adr"
+
+  # Query templates (filled from org profile)
+  templates:
+    - "language:{language} topic:best-practices"
+    - "language:{language} topic:testing"
+    - "{framework} architecture patterns"
+    - "{tool} configuration examples"
+
+# Multi-source discovery
+sources:
+  github_trending:
+    enabled: true
+    languages: []  # Empty = use org profile languages
+    since: "weekly"  # daily, weekly, monthly
+
+  github_search:
+    enabled: true
+    use_code_search: true
+    use_repo_search: true
+
+  awesome_lists:
+    enabled: true
+    # Curated awesome lists to parse
+    lists:
+      - "awesome-python"
+      - "awesome-javascript"
+      - "awesome-go"
+      - "awesome-devops"
+      - "awesome-security"
+      - "awesome-testing"
+
+  topic_discovery:
+    enabled: true
+    max_depth: 2  # Follow related topics up to 2 levels
+
+# Organization discovery
+discover_similar_orgs:
+  enabled: true
+  max_orgs: 50
+  min_public_repos: 10
+  analyze_top_repos_per_org: 5
+
+# Filtering
+filters:
+  # Exclude certain patterns
+  exclude_keywords:
+    - "tutorial"
+    - "course"
+    - "homework"
+    - "school-project"
+    - "playground"
+    - "experiment"
+    - "deprecated"
+
+  # Require certain indicators
+  require_indicators:
+    - has_readme: true
+    - has_license: true
+    # - has_ci: true  # Optional: require CI/CD
+
+  # Language filters
+  exclude_languages:
+    - "HTML"
+    - "CSS"
+    - "TeX"
+
+  # Fork filtering
+  include_forks: false
+
+  # Archive filtering
+  include_archived: false
+
+# Blocklist/Allowlist
+blocklist:
+  organizations: []
+  repositories: []
+  users: []
+
+allowlist:
+  # If non-empty, ONLY these are included
+  organizations: []
+  repositories: []
+
+# Caching
+cache:
+  enabled: true
+  ttl_hours: 24
+  max_size_mb: 500
+
+# Retry configuration
+retry:
+  max_attempts: 3
+  backoff_multiplier: 2
+  initial_delay_seconds: 2
