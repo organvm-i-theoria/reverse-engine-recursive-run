@@ -11,12 +11,14 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import os
+import math
+import time
 
 
 def cmd_analyze(args: argparse.Namespace) -> int:
     """Run hotspot analysis using hotspot_merge logic."""
     from hotspot_merge import load_churn, load_complexity, load_coverage
-    import os, math
 
     churn = load_churn(args.churn)
     complexity = load_complexity(args.complexity)
@@ -59,7 +61,6 @@ def cmd_analyze(args: argparse.Namespace) -> int:
 def cmd_risk(args: argparse.Namespace) -> int:
     """Consolidate risk from multiple sources."""
     from risk_update import load, hotspot_sev
-    import time
 
     hotspots = load(args.hotspots) if args.hotspots else None
     security = load(args.security) if args.security else None
@@ -86,7 +87,6 @@ def cmd_risk(args: argparse.Namespace) -> int:
 def cmd_drift(args: argparse.Namespace) -> int:
     """Compare dependency graphs for architecture drift."""
     from scan_drift import load, edge_key
-    from collections import defaultdict
 
     cur = load(args.current)
     prev = load(args.previous)
