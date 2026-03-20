@@ -28,5 +28,10 @@ jobs:
         continue-on-error: true
         run: ruff check --output-format=github scripts/
 
+      - name: Type check with pyright
+        run: |
+          pip install pyright
+          pyright scripts/
+
       - name: Test with pytest
         run: pytest tests/ -v

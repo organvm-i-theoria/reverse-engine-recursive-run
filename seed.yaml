@@ -1,12 +1,12 @@
-# seed.yaml — Automation Contract for organvm-i-theoria/reverse-engine-recursive-run
+# seed.yaml — Automation Contract for organvm-iv-taxis/reverse-engine-recursive-run
 # Schema: seed/v1.0
 # Generated: 2026-02-17 (SENSORIA Sprint)
 
 schema_version: "1.0"
-organ: I
-organ_name: Theory
+organ: IV
+organ_name: Orchestration
 repo: reverse-engine-recursive-run
-org: organvm-i-theoria
+org: organvm-iv-taxis
 
 metadata:
   implementation_status: ACTIVE

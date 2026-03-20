@@ -1,7 +1,7 @@
 <!-- ORGANVM:AUTO:START -->
 ## Agent Context (auto-generated — do not edit)
 
-This repo participates in the **ORGAN-I (Theory)** swarm.
+This repo participates in the **ORGAN-IV (Orchestration)** swarm.
 
 ### Active Subscriptions
 - Event: `governance.updated` → Action: Check compliance with updated governance rules
@@ -17,5 +17,5 @@ This repo participates in the **ORGAN-I (Theory)** swarm.
 - Adhere to unidirectional flow: I→II→III
 - Never commit secrets or credentials
 
-*Last synced: 2026-03-08T20:11:34Z*
+*Last synced: 2026-03-20T10:58:30Z*
 <!-- ORGANVM:AUTO:END -->

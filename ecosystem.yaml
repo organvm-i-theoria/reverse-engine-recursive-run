@@ -1,9 +1,23 @@
 schema_version: '1.0'
 repo: reverse-engine-recursive-run
-organ: I
-display_name: "Architecture governance toolkit \u2014 7-script Python pipeline for\
-  \ risk scoring, drift detection, ownership analysis, and SBOM generation across\
-  \ any codebase"
+organ: IV
+display_name: "Architecture governance toolkit — 7-script Python pipeline for risk scoring, drift detection, and SBOM generation"
+
 delivery:
-- platform: web_app
+- platform: cli_tool
+  status: in_progress
+  priority: critical
+  notes: "7 Python scripts: risk scoring, drift detection, ownership analysis, SBOM"
+  next_action: "Complete integration testing across all 7 scripts"
+- platform: python_library
+  status: planned
+  priority: medium
+  notes: "Importable library for embedding in CI pipelines"
+  next_action: "Extract reusable modules from CLI scripts"
+
+content:
+- platform: docs_site
   status: not_started
+  priority: high
+  notes: "Risk scoring methodology, drift detection patterns, SBOM format"
+  next_action: "Document each script's purpose and configuration"
