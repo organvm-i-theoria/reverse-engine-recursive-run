@@ -1,0 +1,33 @@
+schema_version: '1.0'
+repo: reverse-engine-recursive-run
+organ: ORGAN-IV
+mirrors:
+  technical:
+  - project: yaml/pyyaml
+    platform: github
+    relevance: 'Python dependency: pyyaml'
+    engagement:
+    - watch
+    tags:
+    - auto-discovered
+    - python-dep
+  - project: pytest-dev/pytest
+    platform: github
+    relevance: 'Python dependency: pytest'
+    engagement:
+    - watch
+    tags:
+    - auto-discovered
+    - python-dep
+  - project: astral-sh/ruff
+    platform: github
+    relevance: 'Python dependency: ruff'
+    engagement:
+    - watch
+    tags:
+    - auto-discovered
+    - python-dep
+  parallel: []
+  kinship: []
+ledger: ~/.organvm/network/ledger.jsonl
+last_scanned: '2026-03-20T11:55:26.341540+00:00'
