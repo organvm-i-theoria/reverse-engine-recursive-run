@@ -1,0 +1,252 @@
+# Analysis Pipeline Configuration
+# Controls how discovered repositories are cloned and analyzed
+
+version: "1.0"
+last_updated: "2025-11-18"
+
+# Cloning configuration
+cloning:
+  # Clone depth (shallow clone)
+  depth: 1
+
+  # Maximum repository size (MB)
+  max_size_mb: 500
+
+  # Timeout per clone (seconds)
+  timeout_seconds: 300
+
+  # Concurrent clones
+  max_parallel: 3
+
+  # Clone location
+  workspace_dir: "/tmp/research_clones"
+
+  # Auto-cleanup
+  auto_cleanup: true
+  cleanup_after_hours: 24
+
+  # Sandbox mode
+  use_docker: false  # Set to true for production
+  docker_image: "research-analysis:latest"
+
+# Analysis modules to run
+modules:
+  structural:
+    enabled: true
+    analyze_directory_structure: true
+    detect_config_files: true
+    measure_doc_coverage: true
+    analyze_test_organization: true
+
+  quality:
+    enabled: true
+    run_complexity_analysis: true
+    detect_coverage_config: true
+    extract_linting_config: true
+    analyze_code_review_practices: true
+
+  architecture:
+    enabled: true
+    extract_dependency_graph: true
+    identify_service_boundaries: true
+    detect_api_patterns: true
+    analyze_data_flows: false  # Expensive, disable by default
+
+  devops:
+    enabled: true
+    parse_ci_cd_configs: true
+    detect_iac_patterns: true
+    extract_monitoring_setup: true
+    identify_security_tools: true
+
+  documentation:
+    enabled: true
+    analyze_readme: true
+    extract_adrs: true
+    find_runbooks: true
+    extract_contribution_guide: true
+
+# Structural Analysis
+structural:
+  # Directory patterns to analyze
+  analyze_patterns:
+    - "src/**"
+    - "lib/**"
+    - "app/**"
+    - "pkg/**"
+    - "tests/**"
+    - "docs/**"
+
+  # Config files to detect
+  config_patterns:
+    - "*.yml"
+    - "*.yaml"
+    - "*.json"
+    - "*.toml"
+    - "*.ini"
+    - "Dockerfile*"
+    - "docker-compose*.yml"
+    - "Makefile"
+    - ".github/**"
+    - ".gitlab-ci.yml"
+
+  # Documentation coverage
+  doc_indicators:
+    - "README.md"
+    - "CONTRIBUTING.md"
+    - "docs/"
+    - "*.md"
+    - "LICENSE"
+
+# Quality Analysis
+quality:
+  # Complexity tools by language
+  complexity_tools:
+    python: "radon"
+    javascript: "eslint"
+    go: "gocyclo"
+    java: "checkstyle"
+
+  # Coverage tools
+  coverage_tools:
+    python: ["pytest-cov", "coverage.py"]
+    javascript: ["jest", "nyc", "istanbul"]
+    go: ["go test -cover"]
+    java: ["jacoco"]
+
+  # Linters
+  linters:
+    python: ["pylint", "flake8", "black", "mypy"]
+    javascript: ["eslint", "prettier"]
+    go: ["golint", "gofmt"]
+    java: ["checkstyle", "pmd"]
+
+# DevOps Analysis
+devops:
+  # CI/CD platforms to detect
+  ci_platforms:
+    - ".github/workflows"      # GitHub Actions
+    - ".gitlab-ci.yml"         # GitLab CI
+    - ".travis.yml"            # Travis CI
+    - "Jenkinsfile"            # Jenkins
+    - ".circleci"              # CircleCI
+    - "azure-pipelines.yml"    # Azure Pipelines
+
+  # Infrastructure as Code
+  iac_tools:
+    - "terraform"
+    - "cloudformation"
+    - "kubernetes"
+    - "helm"
+    - "ansible"
+    - "pulumi"
+
+  # Monitoring/Observability
+  observability_tools:
+    - "prometheus"
+    - "grafana"
+    - "datadog"
+    - "newrelic"
+    - "sentry"
+    - "opentelemetry"
+
+  # Security tools
+  security_tools:
+    - "trivy"
+    - "semgrep"
+    - "snyk"
+    - "sonarqube"
+    - "dependabot"
+
+# Documentation Analysis
+documentation:
+  # README quality metrics
+  readme_quality:
+    min_length: 500  # characters
+    required_sections:
+      - "installation"
+      - "usage"
+      - "license"
+    bonus_sections:
+      - "contributing"
+      - "testing"
+      - "architecture"
+
+  # ADR detection
+  adr_patterns:
+    - "docs/adr/**/*.md"
+    - "docs/decisions/**/*.md"
+    - "adr/**/*.md"
+    - "decisions/**/*.md"
+
+  # Runbook detection
+  runbook_patterns:
+    - "runbooks/**"
+    - "playbooks/**"
+    - "docs/operations/**"
+    - "docs/runbooks/**"
+
+# Comparison with baseline
+baseline_comparison:
+  enabled: true
+
+  # Gap identification
+  identify_gaps:
+    - missing_tools
+    - missing_practices
+    - better_configurations
+    - superior_patterns
+
+  # Impact scoring
+  impact_factors:
+    risk_reduction: 0.35
+    velocity_improvement: 0.30
+    quality_improvement: 0.20
+    cost_reduction: 0.15
+
+  # Effort estimation
+  effort_estimation:
+    # Map pattern types to T-shirt sizes
+    simple_patterns: "S"      # < 8 hours
+    moderate_patterns: "M"    # 8-24 hours
+    complex_patterns: "L"     # 1-5 days
+    major_changes: "XL"       # > 5 days
+
+# Performance
+performance:
+  # Timeouts
+  module_timeout_seconds: 180
+  total_analysis_timeout_seconds: 600
+
+  # Resource limits
+  max_memory_mb: 2048
+  max_cpu_percent: 80
+
+  # Parallel processing
+  parallel_modules: false  # Run modules sequentially by default
+
+# Output
+output:
+  # Format: "json", "yaml"
+  format: "json"
+
+  # Compression
+  compress: true
+
+  # Include raw data
+  include_raw: true
+
+  # Include diffs
+  include_diff: true
+
+# Error handling
+error_handling:
+  # Continue on module failure
+  continue_on_error: true
+
+  # Retry failed modules
+  retry_failed: true
+  max_retries: 2
+
+  # Log level: "DEBUG", "INFO", "WARNING", "ERROR"
+  log_level: "INFO"

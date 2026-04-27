@@ -1,0 +1,190 @@
+# Prioritization Weights for Recommendations
+# Controls how recommendations are ranked and prioritized
+
+version: "1.0"
+last_updated: "2025-11-18"
+
+# Priority formula:
+# priority_score = (impact × urgency × strategic_alignment) / (effort × risk)
+
+# Impact scoring (1-10 scale)
+impact:
+  # How impact is calculated
+  factors:
+    risk_reduction: 0.35        # Reduction in risk score
+    velocity_improvement: 0.30  # Increase in team velocity
+    quality_improvement: 0.20   # Improvement in code quality
+    cost_reduction: 0.15        # Reduction in operational costs
+
+  # Impact multipliers by category
+  category_multipliers:
+    security: 1.5        # Security improvements get 50% boost
+    architecture: 1.2    # Architecture improvements get 20% boost
+    testing: 1.1         # Testing improvements get 10% boost
+    documentation: 1.0   # Documentation improvements (baseline)
+    devops: 1.15         # DevOps improvements get 15% boost
+    tooling: 1.05        # Tooling improvements get 5% boost
+
+# Urgency scoring (1-10 scale)
+urgency:
+  # Based on current gap severity
+  gap_severity_mapping:
+    critical: 10   # Critical gap (security vuln, compliance issue)
+    high: 8        # High gap (significant risk or inefficiency)
+    medium: 5      # Medium gap (nice to have improvement)
+    low: 2         # Low gap (minor enhancement)
+
+  # Time-based urgency
+  time_factors:
+    # Compliance deadlines
+    compliance_deadline_days:
+      30: 10       # < 30 days = urgency 10
+      90: 8        # < 90 days = urgency 8
+      180: 5       # < 180 days = urgency 5
+      365: 2       # < 365 days = urgency 2
+
+    # Trend-based urgency (emerging vs declining)
+    trending_up: 1.3      # Multiplier for emerging practices
+    stable: 1.0           # Multiplier for stable practices
+    trending_down: 0.7    # Multiplier for declining practices
+
+# Strategic alignment (0.5-1.5 multiplier)
+strategic_alignment:
+  # Align with organizational priorities
+  priorities:
+    # These should be customized per organization
+    improve_security: 1.5
+    increase_velocity: 1.4
+    reduce_technical_debt: 1.3
+    improve_observability: 1.2
+    enhance_testing: 1.1
+    improve_documentation: 1.0
+
+  # Alignment with current initiatives
+  current_initiatives:
+    # Example: if org is migrating to microservices
+    microservices_migration: 1.4
+    cloud_adoption: 1.3
+    devops_transformation: 1.2
+
+# Effort estimation
+effort:
+  # T-shirt size to numeric score mapping (1-10)
+  size_scores:
+    XS: 1   # < 4 hours
+    S: 2    # 4-8 hours
+    M: 5    # 1-3 days
+    L: 8    # 3-10 days
+    XL: 10  # > 10 days
+
+  # Effort adjustment factors
+  adjustments:
+    # Team familiarity with technology
+    high_familiarity: 0.8      # 20% reduction
+    medium_familiarity: 1.0    # No change
+    low_familiarity: 1.3       # 30% increase
+
+    # Existing infrastructure compatibility
+    highly_compatible: 0.9     # 10% reduction
+    partially_compatible: 1.0  # No change
+    incompatible: 1.5          # 50% increase
+
+    # Dependencies on other work
+    no_dependencies: 1.0       # No change
+    few_dependencies: 1.2      # 20% increase
+    many_dependencies: 1.5     # 50% increase
+
+# Risk assessment (0.5-2.0 penalty multiplier)
+risk:
+  # Risk factors
+  factors:
+    # Implementation risk
+    implementation_complexity: 0.30
+    team_skill_gap: 0.25
+    dependency_risk: 0.20
+    rollback_difficulty: 0.15
+    blast_radius: 0.10
+
+  # Risk level to score mapping (higher = riskier)
+  risk_scores:
+    low: 0.5       # Low risk = 0.5× priority (boost)
+    medium: 1.0    # Medium risk = 1.0× priority (neutral)
+    high: 1.5      # High risk = 1.5× priority (penalty)
+    critical: 2.0  # Critical risk = 2.0× priority (heavy penalty)
+
+  # Risk mitigation credit
+  mitigation_available:
+    rollback_plan: 0.9         # 10% risk reduction
+    feature_flags: 0.85        # 15% risk reduction
+    gradual_rollout: 0.9       # 10% risk reduction
+    comprehensive_tests: 0.85  # 15% risk reduction
+
+# Composite scoring
+composite:
+  # Priority thresholds
+  thresholds:
+    critical: 8.0    # Must do immediately
+    high: 6.0        # Should do soon
+    medium: 4.0      # Nice to have
+    low: 2.0         # Backlog
+
+  # Score normalization
+  normalize: true
+  normalization_method: "minmax"  # "minmax", "zscore"
+
+  # Rounding
+  round_scores: true
+  decimal_places: 2
+
+# Filtering and ranking
+filtering:
+  # Minimum viable priority score
+  min_priority_score: 2.0
+
+  # Maximum recommendations per cycle
+  max_recommendations: 50
+
+  # Diversity requirements
+  ensure_category_diversity: true
+  min_per_category: 1
+  max_per_category: 10
+
+# Evidence requirements
+evidence:
+  # Minimum number of exemplar repos
+  min_exemplars: 3
+
+  # Minimum exemplar quality (stars)
+  min_exemplar_stars: 100
+
+  # Minimum pattern frequency
+  min_pattern_frequency: 0.20  # Must appear in 20% of analyzed repos
+
+# Feedback integration
+feedback:
+  # Weight previous feedback in scoring
+  use_historical_feedback: true
+  feedback_weight: 0.15
+
+  # Penalize previously rejected recommendations
+  rejection_penalty: 0.7
+
+  # Boost previously accepted recommendations
+  acceptance_boost: 1.3
+
+  # Feedback decay over time (months)
+  feedback_decay_months: 6
+
+# Output configuration
+output:
+  # Top N to highlight
+  highlight_top_n: 10
+
+  # Include full scoring breakdown
+  include_breakdown: true
+
+  # Include alternatives considered
+  include_alternatives: false
+
+  # Group by category
+  group_by_category: true
